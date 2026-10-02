@@ -34,7 +34,7 @@ jobs:
         with:
           ruby-version: '4.0.7'
           bundler: latest
-          bundle-cache: true
+          bundler-cache: true
 
       - name: Make gradlew executable
         run: chmod +x ./gradlew
