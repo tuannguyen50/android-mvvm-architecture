@@ -50,6 +50,11 @@ android {
         sourceCompatibility JavaVersion.VERSION_25
         targetCompatibility JavaVersion.VERSION_25
     }
+    defaultConfig {
+        ksp {
+            arg("room.schemaLocation", "$projectDir/schemas")
+        }
+    }
     android {
         lint {
             xmlReport true
