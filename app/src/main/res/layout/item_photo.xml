@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright (C) 2017 The Android Open Source Project
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~      http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<!-- Tuan Thanh Nguyen modified this file. -->
+
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <data>
+
+        <variable
+            name="photoModel"
+            type="tuanthanhnguyen.androidmvvmarchitecture.ui.model.PhotoModel" />
+    </data>
+
+    <androidx.cardview.widget.CardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:cardCornerRadius="@dimen/grid_photo_item_card_corner_radius"
+        app:elevation="@dimen/grid_photo_item_card_elevation"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <androidx.appcompat.widget.AppCompatImageView
+                android:id="@+id/photo_app_compat_image_view"
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:scaleType="fitCenter"
+                app:layout_constraintDimensionRatio="H,4:3"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                app:photoUrl="@{photoModel.photoUrlsModel.small}" />
+
+            <androidx.appcompat.widget.AppCompatTextView
+                android:id="@+id/user_name_app_compat_text_view"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:background="@color/thirty_five_percentage_transparent_black"
+                android:paddingStart="@dimen/padding_start_and_padding_end_user_name_text_in_grid_photo_item"
+                android:paddingTop="@dimen/padding_top_and_padding_bottom_user_name_text_in_grid_photo_item"
+                android:paddingEnd="@dimen/padding_start_and_padding_end_user_name_text_in_grid_photo_item"
+                android:paddingBottom="@dimen/padding_top_and_padding_bottom_user_name_text_in_grid_photo_item"
+                android:text="@{photoModel.userModel.name}"
+                android:textAppearance="?android:textAppearanceSmall"
+                android:textColor="@android:color/white"
+                app:layout_constraintBottom_toBottomOf="@+id/photo_app_compat_image_view"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent" />
+        </androidx.constraintlayout.widget.ConstraintLayout>
+    </androidx.cardview.widget.CardView>
+</layout>

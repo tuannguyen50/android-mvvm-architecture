@@ -1,125 +1,160 @@
-apply plugin: 'com.android.application'
+/*
+ * Copyright (C) 2017 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
-apply plugin: 'kotlin-android'
+// Tuan Thanh Nguyen modified this file.
 
-apply plugin: 'kotlin-android-extensions'
-
-apply plugin: 'kotlin-kapt'
-
-repositories {
-    jcenter()
+plugins {
+    id "com.android.application"
+    id "com.google.devtools.ksp"
+    // Add the Android Legacy Kapt needed for Data Binding
+    id "com.android.legacy-kapt"
 }
 
-configurations {
-    ktlint
-}
+// Check if the current environment is a CI/CD build agent
+def isContinuousIntegration = System.getenv("CI") == "true"
 
 android {
+    namespace = "tuanthanhnguyen.androidmvvmarchitecture"
     compileSdkVersion rootProject.compileSdkVersion
     defaultConfig {
-        applicationId "com.tuann.mvvm"
+        applicationId "tuanthanhnguyen.androidmvvmarchitecture"
         minSdkVersion rootProject.minSdkVersion
         targetSdkVersion rootProject.targetSdkVersion
         versionCode rootProject.versionCode
         versionName rootProject.versionName
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
-        buildConfigField "String", "UNSPLASH_TOKEN", "\"Client-ID 1b31050af4345f3d6aea1ed27560569d0ffa6e5a365989e15970939505a171c5\""
     }
     buildTypes {
         release {
             minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
-    dataBinding {
-        enabled = true
+    buildFeatures {
+        dataBinding true
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_25
+        targetCompatibility JavaVersion.VERSION_25
+    }
+    defaultConfig {
+        ksp {
+            arg("room.schemaLocation", "$projectDir/schemas")
+        }
     }
     android {
-        lintOptions {
+        lint {
             xmlReport true
+            xmlOutput file("build/reports/lint-results-debug.xml")
+            // Abort the build if errors are found during local development
+            abortOnError !isContinuousIntegration
         }
     }
+}
+
+// Initialize a custom configuration to hold the standalone Detekt CLI dependency
+configurations {
+    detektCli
+}
+
+// Configure the Java Launcher using Gradle Toolchain to isolate the Java 22 environment
+def java22Launcher = project.extensions.getByType(JavaToolchainService).launcherFor {
+    languageVersion = JavaLanguageVersion.of(22)
+}
+
+// Register a custom JavaExec task named "detekt"
+tasks.register("detekt", JavaExec) {
+    group = "verification"
+    description = "Runs the standalone Detekt CLI using Java 22 via Gradle Toolchain"
+
+    // Force this specific task to run on Java 22 instead of the project's default JDK
+    javaLauncher = java22Launcher
+
+    // Set the main entry point and the required classpath configurations
+    mainClass = "io.gitlab.arturbosch.detekt.cli.Main"
+    classpath = configurations.detektCli
+
+    // Fail local builds immediately on issue, but allow CI to generate full XML reports
+    ignoreExitValue = isContinuousIntegration
+
+    // Define input sources and configuration paths
+    def inputDir = projectDir.absolutePath
+    def configFile = "${rootDir}/config/detekt/detekt.yml"
+    // Resolve output paths using the modern Gradle 8+ Layout API to avoid "buildDir" deprecation warnings
+    def reportHtml = layout.buildDirectory.dir("reports/detekt/${project.name}.html").get().asFile.absolutePath
+    def reportXml = layout.buildDirectory.dir("reports/detekt/${project.name}.xml").get().asFile.absolutePath
+
+    // Pass CLI arguments to the Detekt executable
+    args("--input", inputDir,
+            "--config", configFile,
+            // For human readability
+            "--report", "html:${reportHtml}",
+            // For Danger processing
+            "--report", "xml:${reportXml}",
+            // Inherit from Detekt's default configuration so you only need to specify overrides
+            // in your detekt.yml
+            "--build-upon-default-config")
+}
+
+// Unit testing configuration
+tasks.withType(org.gradle.api.tasks.testing.Test) {
+    // Fail local builds immediately on test failure, but let CI continue to generate full XML
+    // reports
+    ignoreFailures = isContinuousIntegration
 }
 
 dependencies {
-    implementation fileTree(dir: 'libs', include: ['*.jar'])
-    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
+    implementation "androidx.appcompat:appcompat:$rootProject.appCompatVersion"
+    implementation "androidx.recyclerview:recyclerview:$rootProject.recyclerViewVersion"
+    implementation "androidx.swiperefreshlayout:swiperefreshlayout:$rootProject.swipeRefreshLayoutVersion"
+    implementation "androidx.cardview:cardview:$rootProject.cardViewVersion"
+    implementation "androidx.constraintlayout:constraintlayout:$rootProject.constraintLayoutVersion"
 
-    implementation 'androidx.core:core-ktx:1.0.1'
+    implementation "io.reactivex.rxjava2:rxjava:$rootProject.rxJava2Version"
+    implementation "io.reactivex.rxjava2:rxandroid:$rootProject.rxJava2AndroidVersion"
 
-    implementation "androidx.appcompat:appcompat:1.0.2"
-    implementation "androidx.legacy:legacy-support-v4:$rootProject.support_androidx_version"
-    implementation "com.google.android.material:material:$rootProject.support_androidx_version"
-    implementation "androidx.cardview:cardview:$rootProject.support_androidx_version"
-    implementation "androidx.browser:browser:$rootProject.support_androidx_version"
+    implementation "com.squareup.retrofit2:retrofit:$rootProject.retrofit2Version"
+    implementation "com.squareup.retrofit2:adapter-rxjava2:$rootProject.retrofit2Version"
+    implementation "com.squareup.retrofit2:converter-gson:$rootProject.retrofit2Version"
+    implementation "com.squareup.okhttp3:logging-interceptor:$rootProject.okhttp3LoggingInterceptorVersion"
 
-    implementation 'androidx.constraintlayout:constraintlayout:2.0.0-alpha2'
+    implementation "androidx.room:room-runtime:$rootProject.roomVersion"
+    implementation "androidx.room:room-rxjava2:$rootProject.roomVersion"
+    ksp "androidx.room:room-compiler:$rootProject.roomVersion"
 
-    implementation "com.squareup.okhttp3:logging-interceptor:3.11.0"
+    implementation "androidx.lifecycle:lifecycle-runtime:$rootProject.lifecycleVersion"
+    implementation "androidx.lifecycle:lifecycle-viewmodel:$rootProject.lifecycleVersion"
+    implementation "androidx.lifecycle:lifecycle-livedata:$rootProject.lifecycleVersion"
+    implementation "androidx.lifecycle:lifecycle-common-java8:$rootProject.lifecycleVersion"
+    implementation "androidx.lifecycle:lifecycle-reactivestreams:$rootProject.lifecycleVersion"
+    ksp "androidx.lifecycle:lifecycle-compiler:$rootProject.lifecycleVersion"
 
-    implementation "com.squareup.retrofit2:retrofit:$rootProject.retrofit_version"
-    implementation "com.squareup.retrofit2:converter-moshi:$rootProject.retrofit_version"
-    implementation "com.squareup.retrofit2:adapter-rxjava2:$rootProject.retrofit_version"
+    implementation "com.google.dagger:dagger:$rootProject.daggerVersion"
+    implementation "com.google.dagger:dagger-android:$rootProject.daggerVersion"
+    implementation "com.google.dagger:dagger-android-support:$rootProject.daggerVersion"
+    ksp "com.google.dagger:dagger-compiler:$rootProject.daggerVersion"
+    ksp "com.google.dagger:dagger-android-processor:$rootProject.daggerVersion"
 
-    implementation "se.ansman.kotshi:api:$rootProject.kotshi_version"
-    kapt "se.ansman.kotshi:compiler:$rootProject.kotshi_version"
+    implementation "com.github.bumptech.glide:glide:$rootProject.glideVersion"
+    implementation "com.github.bumptech.glide:okhttp3-integration:$rootProject.glideVersion"
+    ksp "com.github.bumptech.glide:compiler:$rootProject.glideVersion"
 
-    implementation "androidx.lifecycle:lifecycle-runtime:$rootProject.arch_lifecycle_androidx_version"
-    implementation "androidx.lifecycle:lifecycle-extensions:$rootProject.arch_lifecycle_androidx_version"
-    implementation "androidx.lifecycle:lifecycle-reactivestreams:$rootProject.arch_lifecycle_androidx_version"
+    detektCli "io.gitlab.arturbosch.detekt:detekt-cli:$rootProject.detektCLIVersion"
 
-    implementation "androidx.room:room-runtime:$rootProject.arch_room_androidx_version"
-    implementation "androidx.room:room-rxjava2:$rootProject.arch_room_androidx_version"
-    kapt "androidx.room:room-compiler:$rootProject.arch_room_androidx_version"
-
-    implementation "io.reactivex.rxjava2:rxjava:2.2.2"
-    implementation "io.reactivex.rxjava2:rxandroid:2.1.0"
-    implementation "io.reactivex.rxjava2:rxkotlin:2.2.0"
-
-    implementation "com.google.dagger:dagger:$rootProject.dagger_version"
-    implementation "com.google.dagger:dagger-android:$rootProject.dagger_version"
-    implementation "com.google.dagger:dagger-android-support:$rootProject.dagger_version"
-    kapt "com.google.dagger:dagger-compiler:$rootProject.dagger_version"
-    kapt "com.google.dagger:dagger-android-processor:$rootProject.dagger_version"
-
-    kapt 'com.android.tools.build.jetifier:jetifier-core:1.0.0-beta02'
-    annotationProcessor 'com.android.tools.build.jetifier:jetifier-core:1.0.0-beta02'
-
-    implementation "com.github.bumptech.glide:glide:$rootProject.glide_version"
-    implementation "com.github.bumptech.glide:okhttp3-integration:$rootProject.glide_version"
-    kapt "com.github.bumptech.glide:compiler:$rootProject.glide_version"
-
-    implementation "com.facebook.stetho:stetho:$rootProject.stetho_version"
-    implementation "com.facebook.stetho:stetho-okhttp3:$rootProject.stetho_version"
-
-    implementation "com.jakewharton.threetenabp:threetenabp:1.1.0"
-
-    implementation "com.jakewharton.timber:timber:4.7.1"
-
-    ktlint "com.github.shyiko:ktlint:0.29.0"
-
-    // Test
-    testImplementation "junit:junit:$rootProject.junit_version"
-    testImplementation "com.nhaarman:mockito-kotlin:1.5.0"
-
-    testImplementation "org.robolectric:robolectric:$rootProject.robolectric_version"
-    testImplementation "org.robolectric:shadows-multidex:$rootProject.robolectric_version"
-
-    androidTestImplementation 'androidx.test:runner:1.1.0'
-    androidTestImplementation 'androidx.test.espresso:espresso-core:3.1.0'
-}
-
-task ktlint(type: JavaExec, group: "verification") {
-    description = "Check Kotlin code style."
-    classpath = configurations.ktlint
-    main = "com.github.shyiko.ktlint.Main"
-    args "src/**/*.kt", "--reporter=plain", "--reporter=checkstyle,output=${buildDir}/reports/ktlint.xml"
-}
-check.dependsOn ktlint
-
-task ktlintFormat(type: JavaExec, group: "formatting") {
-    description = "Fix Kotlin code style deviations."
-    classpath = configurations.ktlint
-    main = "com.github.shyiko.ktlint.Main"
-    args "-F", "src/**/*.kt"
+    testImplementation "junit:junit:$rootProject.junitVersion"
+    androidTestImplementation "androidx.test.ext:junit:$rootProject.extJunitVersion"
+    androidTestImplementation "androidx.test.espresso:espresso-core:$rootProject.espressoCoreVersion"
 }
