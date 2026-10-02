@@ -1,41 +1,91 @@
-<?xml version="1.0" encoding="utf-8"?>
-<layout xmlns:app="http://schemas.android.com/apk/res-auto">
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright (C) 2017 The Android Open Source Project
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~      http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<!-- Tuan Thanh Nguyen modified this file. -->
+
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <data>
 
-        <variable
-            name="retry"
-            type="com.tuann.mvvm.presentation.common.RetryListener" />
+        <import type="tuanthanhnguyen.androidmvvmarchitecture.ui.common.result.Status" />
 
         <variable
-            name="isError"
-            type="Boolean" />
+            name="status"
+            type="tuanthanhnguyen.androidmvvmarchitecture.ui.common.result.Status" />
 
-        <import type="android.view.View" />
+        <variable
+            name="errorMessage"
+            type="String" />
+
+        <variable
+            name="retryListener"
+            type="tuanthanhnguyen.androidmvvmarchitecture.ui.common.listener.RetryListener" />
     </data>
 
-    <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
-        android:layout_height="100dp">
+        android:layout_height="wrap_content">
 
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:background="?android:selectableItemBackground"
+        <androidx.appcompat.widget.LinearLayoutCompat
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_gravity="center"
             android:gravity="center"
-            android:onClick="@{() -> retry.retry()}"
-            android:text="@string/load_again"
-            android:textColor="@color/text_color"
-            android:visibility="@{isError ? View.VISIBLE: View.GONE, default = visible}" />
+            android:orientation="vertical"
+            app:layout_constraintDimensionRatio="H,4:3"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
 
-        <ProgressBar
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:visibility="@{isError ? View.GONE: View.VISIBLE, default = gone}"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintLeft_toLeftOf="parent"
-            app:layout_constraintRight_toRightOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+            <androidx.core.widget.ContentLoadingProgressBar
+                android:id="@+id/loading_more_content_loading_progress_bar"
+                style="?android:attr/progressBarStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/margin_small"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintLeft_toLeftOf="parent"
+                app:layout_constraintRight_toRightOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                app:visibleGone="@{status == Status.LOADING}" />
 
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/retry_app_compat_button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/spacing_between_views_in_item_load_more"
+                android:onClick="@{() -> retryListener.retry()}"
+                android:text="@string/item_load_more_button_retry"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/loading_more_content_loading_progress_bar"
+                app:visibleGone="@{status == Status.ERROR}" />
+
+            <androidx.appcompat.widget.AppCompatTextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/margin_normal"
+                android:layout_marginTop="@dimen/spacing_between_views_in_item_load_more"
+                android:layout_marginEnd="@dimen/margin_normal"
+                android:layout_marginBottom="@dimen/margin_small"
+                android:gravity="center"
+                android:text="@{errorMessage ?? @string/item_load_more_unknown_error}"
+                app:layout_constraintTop_toBottomOf="@id/retry_app_compat_button"
+                app:visibleGone="@{status == Status.ERROR}" />
+        </androidx.appcompat.widget.LinearLayoutCompat>
     </androidx.constraintlayout.widget.ConstraintLayout>
 </layout>

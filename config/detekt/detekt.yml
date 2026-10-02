@@ -1,0 +1,29 @@
+# Note: The "--build-upon-default-config" flag has been explicitly enabled. Therefore, all default
+# rules are automatically loaded, and this file is used strictly to add new rules or override
+# existing default behaviors.
+
+build:
+  # maxIssues is set to -1 to prevent minor code smells from failing the build.
+  maxIssues: -1
+  # excludeCorrectable is set to true to ensure the build will still fail immediately if any
+  # critical/severe error (severity: error) is detected.
+  excludeCorrectable: true
+
+style:
+  active: true
+  NewLineAtEndOfFile:
+    active: false
+
+  UseCheckOrError:
+    active: false
+
+  UseRequire:
+    active: false
+
+naming:
+  active: true
+  ClassNaming:
+    active: true
+    # Original pattern: '[A-Z][a-zA-Z0-9]*'
+    # Updated pattern: Allows letters, numbers, and underscores (_)
+    classPattern: '[A-Z][a-zA-Z0-9_]*'

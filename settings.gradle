@@ -1,1 +1,18 @@
+// Provides a central repository (Foojay) to download and isolate the correct JDK required by
+// Detekt for static code analysis, ensuring build environment consistency.
+buildscript {
+    ext {
+        toolchainsFoojayResolverConventionGradlePluginVersion = "1.0.0"
+    }
+    repositories {
+        mavenCentral()
+        gradlePluginPortal()
+    }
+    dependencies {
+        classpath "org.gradle.toolchains.foojay-resolver-convention:org.gradle.toolchains.foojay-resolver-convention.gradle.plugin:$toolchainsFoojayResolverConventionGradlePluginVersion"
+    }
+}
+
+apply plugin: "org.gradle.toolchains.foojay-resolver-convention"
+
 include ':app'
