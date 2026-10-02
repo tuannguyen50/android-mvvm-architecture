@@ -1,7 +1,7 @@
 name: Android code verification and Danger
 
 on:
-  pull_request:
+  pull_request_target:
     branches: [ master, develop ]
     types: [ opened, synchronize, reopened, edited, ready_for_review ]
 
