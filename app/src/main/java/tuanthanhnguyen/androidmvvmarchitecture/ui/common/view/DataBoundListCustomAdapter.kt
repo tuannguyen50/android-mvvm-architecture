@@ -35,11 +35,11 @@ abstract class DataBoundListCustomAdapter<T, V : ViewDataBinding>(
             // - Short-lived task: DiffUtil computation is a closed-loop operation that completes
             //   almost instantly (few milliseconds) and releases itself. It doesn't run
             //   infinitely.
-            // - Non-interruptible: DiffUtil's algorithm doesn't check the 'isDisposed' flag
-            //   inside its loops. Calling dispose() sends an interrupt signal, but the execution
-            //   will run until completion anyway.
+            // - Non-interruptible: DiffUtil's algorithm doesn't check the isDisposed flag inside
+            //   its loops. Calling dispose() sends an interrupt signal, but the execution will
+            //   run until completion anyway.
             // - Handled by ListAdapter: ListAdapter tracks data generations internally. If a new
-            //   list is submitted, it automatically IGNORES and DISCARDS the stale diff results
+            //   list is submitted, it automatically ignores and discards the stale diff results
             //   once they finish.
             //
             // 2. Why adding the disposal logic to the view model is wrong?

@@ -55,6 +55,8 @@ android {
             arg("room.schemaLocation", "$projectDir/schemas")
         }
     }
+    // Android Lint configuration for static analysis
+    // Note: Generates reports for Dangerfile (danger-android_lint) to parse on CI.
     android {
         lint {
             xmlReport true
@@ -65,6 +67,8 @@ android {
     }
 }
 
+// Detekt configuration for static analysis
+// Note: Generates XML/SARIF reports for Dangerfile (danger-detekt).
 // Initialize a custom configuration to hold the standalone Detekt CLI dependency
 configurations {
     detektCli
@@ -109,11 +113,32 @@ tasks.register("detekt", JavaExec) {
             "--build-upon-default-config")
 }
 
-// Unit testing configuration
+// Local JVM tests configuration for unit testing
+// Note: Generates XML reports for danger-junit to parse on CI.
 tasks.withType(org.gradle.api.tasks.testing.Test) {
+    // Specify the test framework
+    useJUnit()
+
     // Fail local builds immediately on test failure, but let CI continue to generate full XML
     // reports
     ignoreFailures = isContinuousIntegration
+
+    // Ensure JUnit XML reports are enabled for Danger parsing
+    reports {
+        junitXml.required = true
+        // Optional: For human review
+        html.required = true
+    }
+
+    // Console logging configuration for fallback debugging on CI
+    testLogging {
+        events "passed", "skipped", "failed"
+        exceptionFormat "full"
+        showStandardStreams = true
+    }
+
+    // Performance optimization
+    maxParallelForks = Runtime.runtime.availableProcessors().intdiv(2) ?: 1
 }
 
 dependencies {

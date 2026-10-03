@@ -32,13 +32,13 @@ object DateUtil {
     ): Long {
         var localDateTimeTimezoneOffsetString: String = dateTimeTimezoneOffsetString
 
-        // 1. Convert UTC "Z" to "+0000" so SimpleDateFormat 'Z' can read it
+        // Normalize ISO 8601 UTC designator "Z" to "+0000" for SimpleDateFormat "Z" compatibility
         if (localDateTimeTimezoneOffsetString.endsWith("Z")) {
             localDateTimeTimezoneOffsetString =
                 localDateTimeTimezoneOffsetString.dropLast(1) + "+0000"
         }
-        // 2. Remove the last colon from offsets like "-04:00" or "+07:00" to make it "-0400" or
-        // "+0700"
+        // Strip the colon from timezone offsets (e.g., "-01:00" to "-0100") to match RFC 822
+        // format
         else if (
             localDateTimeTimezoneOffsetString.matches(".*[+-]\\d{2}:\\d{2}$".toRegex())
         ) {
@@ -47,7 +47,8 @@ object DateUtil {
                 localDateTimeTimezoneOffsetString.substring(0, lastColon) +
                         localDateTimeTimezoneOffsetString.substring(lastColon + 1)
         }
-        // 3. Use uppercase 'Z' which is fully supported down to API 1
+        // Parse using uppercase "Z" pattern, which offers full backward compatibility down to
+        // API 1
         val simpleDateFormat = SimpleDateFormat(
             "yyyy-MM-dd'T'HH:mm:ssZ",
             Locale.getDefault()
