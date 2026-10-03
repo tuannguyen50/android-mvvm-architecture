@@ -1,35 +1,35 @@
-# 1. PR hygiene checks
+# 1. Pull request hygiene checks
 # - Check for Work In Progress (WIP) status
 # If the contributor tagged it with [WIP], I will post a gentle warning so reviewers know it's not
 # ready yet.
 if github.pr_title.include?("[WIP]") || github.pr_title.downcase.start_with?("wip:")
-  warn("This pull request is marked as Work in Progress (WIP) and is not ready for a final review.
-  ")
+  warn("This pull request is marked as Work in Progress (WIP) and is not ready for a final " \
+  "review.")
 end
 
 # - Check for a pull request description
 # If someone leaves the description empty or writes less than 10 characters, I will block the
 # merge until they fill it out.
 if github.pr_body.nil? || github.pr_body.strip.length < 10
-  fail("Please provide a detailed description of your changes in the PR body. A description is
-  required.")
+  fail("Please provide a detailed description of your changes in the pull request body. A " \
+  "description is required.")
 end
 
 # - Check pull request size (Lines of code changed)
-# If the PR touches more than 500 lines of code, I will flag it so the developer can consider
-# breaking it into smaller chunks.
+# If the pull request touches more than 500 lines of code, I will flag it so the developer can
+# consider breaking it into smaller chunks.
 MAX_PR_SIZE = 500
 if git.lines_of_code > MAX_PR_SIZE
-  warn("This PR contains #{git.lines_of_code} lines of code. Please consider breaking it down into
-  smaller, bite-sized pull requests (Ideal size is < #{MAX_PR_SIZE} lines).")
+  warn("This pull request contains #{git.lines_of_code} lines of code. Please consider breaking " \
+  "it down into smaller, bite-sized pull requests (Ideal size is < #{MAX_PR_SIZE} lines).")
 end
 
 # - Check for target branch safeguard
-# It's a quick heads-up if a PR is aiming straight for production branches like "main" or
-# "master".
+# It's a quick heads-up if a pull request is aiming straight for production branches like "main"
+# or "master".
 if github.branch_for_base == "main" || github.branch_for_base == "master"
-  message("This Pull Request is targeting the primary production branch
-  (`#{github.branch_for_base}`). Please ensure it has been thoroughly tested.")
+  message("This Pull Request is targeting the primary production branch " \
+  "(`#{github.branch_for_base}`). Please ensure it has been thoroughly tested.")
 end
 
 # 2. Code analysis reports
@@ -43,18 +43,19 @@ if defined?(android_lint)
     android_lint.filtering = true
     android_lint.skip_gradle_task = true
 
-    # Going through each found report file to post inline comments directly onto the PR lines.
+    # Going through each found report file to post inline comments directly onto the pull request
+    # lines.
     lint_reports.each do |report|
       android_lint.report_file = report
 
       # Run lint without the unknown keyword
       android_lint.lint(inline_mode: true)
 
-      # Check severe errors using the exact method supported in version 0.0.12
-      # We check both lint_errors and lint_warnings depending on severity
+      # Check severe errors using the exact method supported in version 0.0.12 by checking both
+      # lint_errors and lint_warnings depending on severity.
       if android_lint.respond_to?(:lint_errors) && android_lint.lint_errors.any?
         android_lint.lint_errors.each do |issue|
-          # In version 0.0.12, issue properties are safely accessed via symbols or methods
+          # In version 0.0.12, issue properties are safely accessed via symbols or methods.
           severity = issue.respond_to?(:severity) ? issue.severity.to_s.downcase : ""
           if severity == "error" || severity == "fatal"
             issue_id = issue.respond_to?(:issue_id) ? issue.issue_id : (issue.respond_to?(:id)?
@@ -62,21 +63,21 @@ if defined?(android_lint)
             file_path = issue.respond_to?(:path) ? issue.path : (issue.respond_to?(:file) ?
             issue.file : "")
 
-            fail("Severe Android Lint issue found [#{issue_id}] in #{file_path} at line
-            #{issue.line}: #{issue.message}")
+            fail("Severe Android Lint issue found [#{issue_id}] in #{file_path} at line " \
+            "#{issue.line}: #{issue.message}")
           end
         end
       end
 
     end
   else
-    warn("Android Lint report not found. Make sure \"./gradlew lintDebug\" ran successfully before
-    the Danger step.")
+    warn("Android Lint report not found. Make sure \"./gradlew lintDebug\" ran successfully " \
+    "before the Danger step.")
   end
 end
 
 # - Detekt (Kotlin static code analysis)
-# Automatically scan for all detekt XML reports across the project
+# Automatically scan for all detekt XML reports across the project.
 detekt_reports = Dir.glob("**/build/reports/detekt/*.xml")
 
 if defined?(detekt)
@@ -88,8 +89,8 @@ if defined?(detekt)
       detekt.report_file = report
       detekt.lint
 
-      # This loop is crucial: Scan through Detekt errors for the current report file.
-      # If it finds critical errors or warnings, throw a fail to block the merge.
+      # Scan Detekt errors in the report file to block the merge if critical issues or warnings
+      # are found.
       if detekt.errors && detekt.errors.any?
         detekt.errors.each do |error|
           severity = error.severity.to_s.downcase
@@ -101,15 +102,15 @@ if defined?(detekt)
             rule_id = error.respond_to?(:rule_id) ? error.rule_id : error.id
             file_path = error.respond_to?(:path) ? error.path : error.file
 
-            fail("Detekt code smell found [#{rule_id}] in #{file_path}:#{error.line} -
-            #{error.message}")
+            fail("Detekt code smell found [#{rule_id}] in #{file_path}:#{error.line} - " \
+            "#{error.message}")
           end
         end
       end
     end
   else
-    warn("Detekt report not found. Make sure \"./gradlew detekt\" ran successfully before
-    Danger.")
+    warn("Detekt report not found. Make sure \"./gradlew detekt\" ran successfully before " \
+    "Danger.")
   end
 end
 
@@ -122,42 +123,42 @@ if junit_reports.any?
   # Ensuring skipped test cases are still visible in the final table summary.
   junit.show_skipped_tests = true
 
-  # Properly parse all discovered XML files at once by passing the array directly to safely
-  # aggregate testing data.
-  junit.parse_mock_results junit_reports
+  # Parse all discovered XML files by passing the array directly to safely aggregate testing data.
+  junit.parse junit_reports
 
   # This method call is required! It commands Danger to print a clean, readable Markdown summary
-  # table right in the PR comment thread. It will automatically fail the PR if any tests failed.
+  # table right in the pull request comment thread. It will automatically fail the pull request if
+  # any tests failed.
   junit.report
 else
-  warn("JUnit test reports not found. Make sure your unit test command (e.g., \"./gradlew test\")
-  ran successfully before Danger.")
+  warn("JUnit test reports not found. Make sure your unit test command " \
+  "(e.g., \"./gradlew test\") ran successfully before Danger.")
 end
 
 # 4. Compiler Warnings Section (Log Parsing)
 log_file_path = "build_output.log"
 
 if File.exist?(log_file_path)
-  # Get the current working directory dynamically (works on both local machine and CI)
+  # Get the current working directory dynamically (works on both local machine and CI).
   current_dir = Dir.pwd
 
   File.foreach(log_file_path) do |line|
     clean_line = line.strip
 
-    # 1. Regex to capture Kotlin Compiler Warnings (e.g., w: /path/to/File.kt: (10, 5): message)
+    # Regex to capture Kotlin Compiler Warnings (e.g., w: /path/to/File.kt: (10, 5): message).
     if line =~ /^w:\s+(.+?):\s*\((\d+),\s*\d+\):\s*(.+)$/
       file_path = $1
       line_number = $2.to_i
       message = $3
 
       # Sanitize path: Remove absolute local directory path, leaving only the relative path (e.g.,
-      # app/src/...)
+      # app/src/...).
       relative_file = file_path.sub("#{current_dir}/", "")
 
-      # Comment directly onto the specific line of code on the Pull Request
+      # Comment directly onto the specific line of code on the Pull Request.
       warn("**Kotlin Compiler Warning:** #{message}", file: relative_file, line: line_number)
 
-    # 2. Regex to capture Java Compiler Warnings (e.g., /path/to/File.java:15: warning: message)
+    # Regex to capture Java Compiler Warnings (e.g., /path/to/File.java:15: warning: message).
     elsif line =~ /^(.+?):(\d+):\s*warning:\s*(.+)$/
       file_path = $1
       line_number = $2.to_i
@@ -166,14 +167,14 @@ if File.exist?(log_file_path)
       relative_file = file_path.sub("#{current_dir}/", "")
       warn("**Java Compiler Warning:** #{message}", file: relative_file, line: line_number)
 
-    # 3. Capture general system build warnings without specific line numbers (e.g.,
-    # Room exportSchema warning)
+    # Capture general system build warnings without specific line numbers (e.g., Room exportSchema
+    # warning).
     elsif line.downcase.include?("warning:") || line.start_with?("w:")
-      # Mask any local machine file paths inside the text for privacy and security
+      # Mask any local machine file paths inside the text for privacy and security.
       clean_message = clean_line.gsub("#{current_dir}/", "")
 
-      # Remove redundant 'w:' or 'warning:' prefixes from the beginning of the string for better
-      # formatting
+      # Remove redundant "w:" or "warning:" prefixes from the beginning of the string for better
+      # formatting.
       clean_message = clean_message.sub(/^w:\s*/i, "").sub(/^warning:\s*/i, "")
 
       warn("**Build Warning:** #{clean_message}")
