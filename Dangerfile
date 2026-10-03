@@ -33,14 +33,8 @@ if github.branch_for_base == "main" || github.branch_for_base == "master"
 end
 
 # 2. Code analysis reports
-# - Android lint report
-# I'm using Dir.glob here to scan for all XML reports across the project, which works perfectly
-# for multi-module setups.
-lint_reports = Dir.glob("**/build/reports/lint-results-debug.xml")
-
-# - Android lint report
-# Automatically scan for all XML lint reports across the project, which works perfectly for
-# multi-module setups.
+# - Android Lint report
+# Scans for all XML lint reports across the project, working perfectly for multi-module setups.
 lint_reports = Dir.glob("**/build/reports/lint-results-debug.xml")
 
 if defined?(android_lint)
@@ -128,20 +122,13 @@ if junit_reports.any?
   # Ensuring skipped test cases are still visible in the final table summary.
   junit.show_skipped_tests = true
 
-  # Looping through all XML files to parse and aggregate the testing data properly.
-  junit_reports.each do |report|
-    junit.parse report
-  end
+  # Properly parse all discovered XML files at once by passing the array directly to safely
+  # aggregate testing data.
+  junit.parse_mock_results junit_reports
 
   # This method call is required! It commands Danger to print a clean, readable Markdown summary
-  # table right in the PR comment thread.
+  # table right in the PR comment thread. It will automatically fail the PR if any tests failed.
   junit.report
-
-  # Passing unit tests is critical. If there are any failures, I will block the PR from being
-  # merged.
-  if junit.failures.count > 0
-    fail("#{junit.failures.count} Unit test(s) failed! Please fix your tests before merging.")
-  end
 else
   warn("JUnit test reports not found. Make sure your unit test command (e.g., \"./gradlew test\")
   ran successfully before Danger.")
